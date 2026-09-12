@@ -1,15 +1,27 @@
 from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
 from Backend.gemini_service import analyze_crop
 import traceback
-from fastapi.responses import JSONResponse
 
 app = FastAPI(title="AgriGuard API")
 
 
+# =========================================================
+# STATIC FRONTEND (index.html, style.css, script.js)
+# =========================================================
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
 @app.get("/")
 def home():
-    return {"message": "AgriGuard API is running"}
+    return FileResponse("static/index.html")
 
+
+# =========================================================
+# ANALYZE ENDPOINT
+# =========================================================
 
 @app.post("/analyze")
 async def analyze(
@@ -48,7 +60,6 @@ async def analyze(
         print("Gemini response received")
 
         return result.model_dump()
-
 
     except Exception as e:
         print("\n========== BACKEND ERROR ==========")

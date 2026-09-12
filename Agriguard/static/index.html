@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AgriGuard — Crop Health Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- ============================================= -->
+  <!-- LEFT: CONTROL PANEL                            -->
+  <!-- ============================================= -->
+  <aside class="panel">
+    <header class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="30" height="30">
+          <path d="M24 6 C14 6 8 14 8 24 C8 34 14 42 24 42 C24 30 24 18 24 6 Z" fill="var(--moss)"/>
+          <path d="M24 6 C34 6 40 14 40 24 C40 34 34 42 24 42" fill="none" stroke="var(--moss)" stroke-width="2" opacity="0.4"/>
+        </svg>
+      </span>
+      <div>
+        <h1>AgriGuard</h1>
+        <p class="brand-sub">Field diagnostic assistant</p>
+      </div>
+    </header>
+
+    <form id="analyze-form">
+
+      <div class="field-group">
+        <label for="crop">Crop</label>
+        <select id="crop" name="crop">
+          <option>Tomato</option>
+          <option>Potato</option>
+          <option>Bell Pepper</option>
+          <option>Grape</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="image-input">Leaf specimen</label>
+        <div id="dropzone" class="dropzone">
+          <input type="file" id="image-input" name="file" accept="image/jpeg,image/png,image/jpg" hidden />
+          <div id="dropzone-empty" class="dropzone-empty">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p>Drop a photo, or <span class="link-text">choose a file</span></p>
+            <p class="hint">JPG or PNG</p>
+          </div>
+          <div id="dropzone-preview" class="dropzone-preview" hidden>
+            <img id="preview-img" alt="Uploaded leaf" />
+            <button type="button" id="remove-image" class="remove-btn" aria-label="Remove image">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group conditions">
+        <label>Field conditions</label>
+
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <span>Humidity</span>
+            <span class="slider-value" id="humidity-value">70%</span>
+          </div>
+          <input type="range" id="humidity" name="humidity" min="0" max="100" value="70" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-label-row">
+            <span>Temperature</span>
+            <span class="slider-value" id="temperature-value">25°C</span>
+          </div>
+          <input type="range" id="temperature" name="temperature" min="0" max="60" value="25" />
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="rain" name="rain" />
+          <span>Recent rain / wet conditions</span>
+        </label>
+      </div>
+
+      <button type="submit" id="analyze-btn" class="analyze-btn" disabled>
+        <span class="btn-label">Analyze specimen</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    </form>
+  </aside>
+
+  <!-- ============================================= -->
+  <!-- RIGHT: REPORT                                  -->
+  <!-- ============================================= -->
+  <main class="report-wrap">
+
+    <div id="empty-state" class="empty-state">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M9 2c-2 3-3 5-3 8a6 6 0 0 0 12 0c0-3-1-5-3-8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 22V10" stroke-linecap="round"/>
+      </svg>
+      <p>Upload a leaf photo and set field conditions to generate a report.</p>
+    </div>
+
+    <div id="error-state" class="error-state" hidden>
+      <p class="error-title">Analysis couldn't be completed</p>
+      <p id="error-message" class="error-message"></p>
+    </div>
+
+    <article id="report" class="report" hidden>
+
+      <div class="report-head">
+        <div>
+          <p class="report-eyebrow" id="report-crop">—</p>
+          <h2 id="report-disease">—</h2>
+        </div>
+        <div class="confidence-ring-wrap">
+          <svg class="confidence-ring" width="72" height="72" viewBox="0 0 72 72">
+            <circle cx="36" cy="36" r="30" fill="none" stroke="var(--hairline)" stroke-width="6"/>
+            <circle id="confidence-arc" cx="36" cy="36" r="30" fill="none" stroke="var(--moss)" stroke-width="6"
+                    stroke-linecap="round" transform="rotate(-90 36 36)"/>
+          </svg>
+          <span id="confidence-value" class="confidence-value">—</span>
+        </div>
+      </div>
+
+      <div class="report-photo-wrap">
+        <img id="report-photo" class="report-photo" alt="Analyzed leaf specimen" />
+      </div>
+
+      <section class="report-section">
+        <h3>Risk level</h3>
+        <div class="gauge">
+          <div class="gauge-track">
+            <div id="gauge-fill" class="gauge-fill"></div>
+            <div id="gauge-marker" class="gauge-marker"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>Low</span><span>Medium</span><span>High</span>
+          </div>
+        </div>
+        <p id="risk-caption" class="risk-caption">—</p>
+      </section>
+
+      <section class="report-section">
+        <h3>Assessment</h3>
+        <p id="report-reasoning" class="reasoning-text">—</p>
+      </section>
+
+      <div class="report-columns">
+        <section class="report-section">
+          <h3>Symptoms observed</h3>
+          <ul id="report-symptoms" class="report-list"></ul>
+        </section>
+
+        <section class="report-section">
+          <h3>Recommended actions</h3>
+          <ul id="report-actions" class="report-list report-list--action"></ul>
+        </section>
+
+        <section class="report-section">
+          <h3>Prevention</h3>
+          <ul id="report-prevention" class="report-list"></ul>
+        </section>
+      </div>
+
+      <p class="disclaimer">
+        AgriGuard provides preliminary AI-based crop screening and decision support.
+        Confirm important treatment decisions with qualified local agricultural guidance.
+      </p>
+    </article>
+
+  </main>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
