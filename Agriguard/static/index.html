@@ -14,7 +14,7 @@
 <div class="frame">
 
   <!-- ============================================= -->
-  <!-- LEFT: CONTROL PANEL                            -->
+  <!-- LEFT: CROP DISEASE PANEL                       -->
   <!-- ============================================= -->
   <aside class="panel">
     <header class="brand">
@@ -64,6 +64,14 @@
       <div class="field-group conditions">
         <label>Field conditions</label>
 
+        <button type="button" id="locate-btn" class="locate-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke-linecap="round"/>
+          </svg>
+          <span id="locate-label">Use my location</span>
+        </button>
+
         <div class="slider-row">
           <div class="slider-label-row">
             <span>Humidity</span>
@@ -94,7 +102,7 @@
   </aside>
 
   <!-- ============================================= -->
-  <!-- RIGHT: REPORT                                  -->
+  <!-- MIDDLE: REPORT (shared by both features)       -->
   <!-- ============================================= -->
   <main class="report-wrap">
 
@@ -103,7 +111,7 @@
         <path d="M9 2c-2 3-3 5-3 8a6 6 0 0 0 12 0c0-3-1-5-3-8" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M12 22V10" stroke-linecap="round"/>
       </svg>
-      <p>Upload a leaf photo and set field conditions to generate a report.</p>
+      <p>Run a leaf screening or a fertilizer plan to see a report here.</p>
     </div>
 
     <div id="error-state" class="error-state" hidden>
@@ -111,6 +119,7 @@
       <p id="error-message" class="error-message"></p>
     </div>
 
+    <!-- ===================== DISEASE REPORT ===================== -->
     <article id="report" class="report" hidden>
 
       <div class="report-head">
@@ -174,7 +183,96 @@
       </p>
     </article>
 
+    <!-- ===================== FERTILIZER REPORT ===================== -->
+    <article id="fertilizer-report" class="report" hidden>
+
+      <div class="report-head">
+        <div>
+          <p class="report-eyebrow" id="fert-crop">—</p>
+          <h2>Fertilizer plan</h2>
+        </div>
+      </div>
+
+      <section class="report-section">
+        <h3>Soil summary</h3>
+        <p id="fert-soil-summary" class="reasoning-text">—</p>
+      </section>
+
+      <section class="report-section fert-section">
+        <h3>Apply before planting, in priority order</h3>
+        <div id="fert-grid" class="fert-grid"></div>
+      </section>
+
+      <p class="disclaimer">
+        These are preliminary, AI-assisted fertilizer suggestions based on your soil health card.
+        Confirm exact quantities and timing with your local Krishi Vigyan Kendra or agricultural
+        extension office before applying.
+      </p>
+    </article>
+
   </main>
+
+  <!-- ============================================= -->
+  <!-- RIGHT: FERTILIZER PLANNER PANEL                -->
+  <!-- ============================================= -->
+  <aside class="panel panel-right">
+    <header class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" width="30" height="30">
+          <path d="M10 38 L38 38" stroke="var(--moss)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M24 38 V20" stroke="var(--moss)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M24 20 C16 20 12 14 12 8 C20 8 24 14 24 20 Z" fill="var(--moss)"/>
+          <path d="M24 24 C32 24 36 18 36 12 C28 12 24 18 24 24 Z" fill="var(--moss)" opacity="0.45"/>
+        </svg>
+      </span>
+      <div>
+        <h1>Fertilizer Planner</h1>
+        <p class="brand-sub">Pre-planting soil guidance</p>
+      </div>
+    </header>
+
+    <form id="fert-form">
+
+      <div class="field-group">
+        <label for="plant-crop">Crop to be planted</label>
+        <select id="plant-crop" name="crop">
+          <option>Tomato</option>
+          <option>Potato</option>
+          <option>Bell Pepper</option>
+          <option>Grape</option>
+          <option>Paddy (Rice)</option>
+          <option>Wheat</option>
+          <option>Rapeseed / Mustard</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="shc-input">Soil Health Card</label>
+        <div id="shc-dropzone" class="dropzone">
+          <input type="file" id="shc-input" name="file" accept="image/jpeg,image/png,image/jpg" hidden />
+          <div id="shc-dropzone-empty" class="dropzone-empty">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p>Drop your Soil Health Card, or <span class="link-text">choose a file</span></p>
+            <p class="hint">JPG or PNG photo/scan</p>
+          </div>
+          <div id="shc-dropzone-preview" class="dropzone-preview" hidden>
+            <img id="shc-preview-img" alt="Uploaded soil health card" />
+            <button type="button" id="shc-remove-image" class="remove-btn" aria-label="Remove image">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" id="fert-btn" class="analyze-btn" disabled>
+        <span class="btn-label">Get fertilizer plan</span>
+        <span class="btn-spinner" hidden></span>
+      </button>
+    </form>
+  </aside>
+
 </div>
 
 <script src="/static/script.js"></script>

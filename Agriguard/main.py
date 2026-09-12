@@ -1,7 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
-from Backend.gemini_service import analyze_crop
+from Backend.gemini_service import analyze_crop, recommend_fertilizers
 import traceback
 
 app = FastAPI(title="AgriGuard API")
@@ -20,7 +20,7 @@ def home():
 
 
 # =========================================================
-# ANALYZE ENDPOINT
+# CROP DISEASE ANALYZE ENDPOINT
 # =========================================================
 
 @app.post("/analyze")
@@ -58,6 +58,50 @@ async def analyze(
         )
 
         print("Gemini response received")
+
+        return result.model_dump()
+
+    except Exception as e:
+        print("\n========== BACKEND ERROR ==========")
+        traceback.print_exc()
+        print("====================================\n")
+
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "error_type": type(e).__name__}
+        )
+
+
+# =========================================================
+# FERTILIZER PLAN ENDPOINT
+# =========================================================
+
+@app.post("/fertilizer-plan")
+async def fertilizer_plan(
+    file: UploadFile = File(...),
+    crop: str = Form("Unknown")
+):
+    try:
+        print("\n==============================")
+        print("NEW FERTILIZER PLAN REQUEST")
+        print("Filename:", file.filename)
+        print("Content type:", file.content_type)
+        print("Target crop:", crop)
+
+        image_bytes = await file.read()
+
+        print("Image bytes:", len(image_bytes))
+
+        if not image_bytes:
+            raise ValueError("Uploaded soil health card image is empty")
+
+        result = recommend_fertilizers(
+            image_bytes=image_bytes,
+            mime_type=file.content_type or "image/jpeg",
+            target_crop=crop
+        )
+
+        print("Gemini fertilizer plan received")
 
         return result.model_dump()
 
