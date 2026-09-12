@@ -2,30 +2,88 @@ import streamlit as st
 import requests
 
 
+# =========================================================
+# PAGE
+# =========================================================
+
 st.set_page_config(
     page_title="AgriGuard",
-    page_icon="🌱",
-    layout="centered"
+    page_icon="🌱"
 )
 
 
 st.title("🌱 AgriGuard")
 
 st.write(
-    "AI-powered crop disease screening and recommendations"
+    "AI-powered crop disease screening"
 )
 
 
-# Upload image
+# =========================================================
+# CROP
+# =========================================================
+
+crop = st.selectbox(
+    "Select crop",
+    [
+        "Tomato",
+        "Potato",
+        "Bell Pepper",
+        "Grape"
+    ]
+)
+
+
+# =========================================================
+# IMAGE
+# =========================================================
+
 uploaded_file = st.file_uploader(
-    "Upload a photo of the affected leaf",
-    type=["jpg", "jpeg", "png"]
+    "Upload a crop leaf image",
+    type=[
+        "jpg",
+        "jpeg",
+        "png"
+    ]
 )
 
 
-if uploaded_file is not None:
+# =========================================================
+# CONDITIONS
+# =========================================================
 
-    # Display image
+st.subheader(
+    "🌦️ Current Conditions"
+)
+
+
+humidity = st.slider(
+    "Humidity (%)",
+    0,
+    100,
+    70
+)
+
+
+temperature = st.number_input(
+    "Temperature (°C)",
+    min_value=0.0,
+    max_value=60.0,
+    value=25.0
+)
+
+
+rain = st.checkbox(
+    "Recent rain / wet conditions"
+)
+
+
+# =========================================================
+# ANALYZE
+# =========================================================
+
+if uploaded_file:
+
     st.image(
         uploaded_file,
         caption="Uploaded leaf",
@@ -33,142 +91,222 @@ if uploaded_file is not None:
     )
 
 
-    # Analyze button
     if st.button(
         "🔍 Analyze Crop",
         use_container_width=True
     ):
 
-        with st.spinner("Analyzing your crop..."):
+        with st.spinner(
+            "Gemini is analyzing the crop..."
+        ):
 
             files = {
+
                 "file": (
+
                     uploaded_file.name,
+
                     uploaded_file.getvalue(),
+
                     uploaded_file.type
                 )
             }
 
 
-            # Send image to FastAPI
+            data = {
+
+                "crop":
+                    crop,
+
+                "humidity":
+                    humidity,
+
+                "temperature":
+                    temperature,
+
+                "rain":
+                    rain
+            }
+
+
             response = requests.post(
-                "http://127.0.0.1:8000/predict",
-                files=files
+
+                "http://127.0.0.1:8000/analyze",
+
+                files=files,
+
+                data=data,
+
+                timeout=90
             )
 
 
-        # Check response
-        if response.status_code == 200:
+        # =================================================
+        # HANDLE RESPONSE
+        # =================================================
+
+        if response.status_code != 200:
+
+            st.error(
+                "Gemini analysis failed."
+            )
+
+            st.code(
+                response.text
+            )
+
+        else:
 
             result = response.json()
 
 
-            # -------------------------
-            # DISEASE
-            # -------------------------
+            # =================================================
+            # DIAGNOSIS
+            # =================================================
 
-            disease = result["disease"]
+            st.divider()
 
-            confidence = result["confidence"]
-
-
-            # Make disease name readable
-            disease_display = (
-                disease
-                .replace("___", " - ")
-                .replace("__", " - ")
-                .replace("_", " ")
+            st.header(
+                "🔬 AI Diagnosis"
             )
 
 
             st.success(
-                f"🌿 Disease detected: {disease_display}"
+                result["disease"]
             )
 
 
             st.metric(
                 "AI Confidence",
-                f"{confidence:.1%}"
+                f"{result['confidence']:.1%}"
             )
 
 
-            # -------------------------
-            # RECOMMENDATION
-            # -------------------------
+            # =================================================
+            # RISK
+            # =================================================
 
-            recommendation = result[
-                "recommendation"
+            st.header(
+                "🚨 Risk Level"
+            )
+
+
+            risk = result[
+                "risk_level"
             ]
 
 
-            st.subheader("⚠️ Risk Level")
-
-            risk = recommendation["risk"]
+            score = result[
+                "risk_score"
+            ]
 
 
             if risk == "HIGH":
 
-                st.error(f"🔴 {risk}")
+                st.error(
+                    f"🔴 HIGH RISK — "
+                    f"{score}/100"
+                )
+
 
             elif risk == "MEDIUM":
 
-                st.warning(f"🟡 {risk}")
+                st.warning(
+                    f"🟡 MEDIUM RISK — "
+                    f"{score}/100"
+                )
+
+
+            elif risk == "LOW":
+
+                st.success(
+                    f"🟢 LOW RISK — "
+                    f"{score}/100"
+                )
+
 
             else:
 
-                st.info(f"🟢 {risk}")
+                st.warning(
+                    "⚠️ UNCERTAIN"
+                )
 
 
-            # -------------------------
+            # =================================================
+            # REASONING
+            # =================================================
+
+            st.subheader(
+                "🧠 Why?"
+            )
+
+            st.write(
+                result["reasoning"]
+            )
+
+
+            # =================================================
             # SYMPTOMS
-            # -------------------------
+            # =================================================
 
-            st.subheader("🔎 Possible Symptoms")
+            st.header(
+                "🔎 Possible Symptoms"
+            )
 
-            for symptom in recommendation["symptoms"]:
+
+            for symptom in result[
+                "symptoms"
+            ]:
 
                 st.write(
                     f"• {symptom}"
                 )
 
 
-            # -------------------------
+            # =================================================
             # ACTIONS
-            # -------------------------
+            # =================================================
 
-            st.subheader("🌱 Recommended Actions")
+            st.header(
+                "🌱 Recommended Actions"
+            )
 
-            for action in recommendation["actions"]:
+
+            for action in result[
+                "recommended_actions"
+            ]:
 
                 st.write(
                     f"✅ {action}"
                 )
 
 
-            # -------------------------
+            # =================================================
             # PREVENTION
-            # -------------------------
+            # =================================================
 
-            st.subheader("🛡️ Prevention")
+            st.header(
+                "🛡️ Prevention"
+            )
 
-            for item in recommendation["prevention"]:
+
+            for item in result[
+                "prevention"
+            ]:
 
                 st.write(
                     f"• {item}"
                 )
 
 
+            # =================================================
+            # DISCLAIMER
+            # =================================================
+
             st.info(
                 "AgriGuard provides preliminary "
-                "AI-based screening. Confirm important "
-                "treatment decisions with local agricultural "
-                "guidance."
-            )
-
-
-        else:
-
-            st.error(
-                "Something went wrong while "
-                "analyzing the image."
+                "AI-based crop screening and "
+                "decision support. Confirm important "
+                "treatment decisions with qualified "
+                "local agricultural guidance."
             )

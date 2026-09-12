@@ -3,6 +3,6 @@ uvicorn
 python-multipart
 streamlit
 requests
-transformers
-torch
 pillow
+google-genai
+pydantic

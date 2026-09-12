@@ -1,6 +1,7 @@
 from transformers import pipeline
 
-# Load pretrained plant disease AI model
+
+# Load pretrained plant disease classifier
 classifier = pipeline(
     "image-classification",
     model="Kathir56/plant-disease-tamilnadu"
@@ -8,11 +9,23 @@ classifier = pipeline(
 
 
 def predict_disease(image):
-    results = classifier(image)
 
-    best_result = results[0]
+    results = classifier(
+        image,
+        top_k=3
+    )
+
+    best = results[0]
 
     return {
-        "disease": best_result["label"],
-        "confidence": float(best_result["score"])
+        "disease": best["label"],
+        "confidence": float(best["score"]),
+
+        "alternatives": [
+            {
+                "disease": item["label"],
+                "confidence": float(item["score"])
+            }
+            for item in results
+        ]
     }

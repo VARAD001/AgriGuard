@@ -1,47 +1,61 @@
-from fastapi import FastAPI, File, UploadFile
-from PIL import Image
-import io
+from fastapi import FastAPI, File, UploadFile, Form
+from Backend.gemini_service import analyze_crop
+import traceback
+from fastapi.responses import JSONResponse
 
-from Backend.model import predict_disease
-from Backend.recommendations import get_recommendation
-
-
-app = FastAPI(
-    title="AgriGuard API"
-)
+app = FastAPI(title="AgriGuard API")
 
 
 @app.get("/")
 def home():
-
-    return {
-        "message": "AgriGuard API is running"
-    }
+    return {"message": "AgriGuard API is running"}
 
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/analyze")
+async def analyze(
+    file: UploadFile = File(...),
+    crop: str = Form("Unknown"),
+    humidity: float = Form(70),
+    temperature: float = Form(25),
+    rain: bool = Form(False)
+):
+    try:
+        print("\n==============================")
+        print("NEW REQUEST")
+        print("Filename:", file.filename)
+        print("Content type:", file.content_type)
+        print("Crop:", crop)
+        print("Humidity:", humidity)
+        print("Temperature:", temperature)
+        print("Rain:", rain)
 
-    # Read uploaded image
-    image_bytes = await file.read()
+        image_bytes = await file.read()
 
-    # Convert bytes → PIL image
-    image = Image.open(
-        io.BytesIO(image_bytes)
-    ).convert("RGB")
+        print("Image bytes:", len(image_bytes))
 
-    # Send image to AI model
-    prediction = predict_disease(image)
+        if not image_bytes:
+            raise ValueError("Uploaded image is empty")
 
-    # Get disease name
-    disease = prediction["disease"]
+        result = analyze_crop(
+            image_bytes=image_bytes,
+            mime_type=file.content_type or "image/jpeg",
+            crop=crop,
+            humidity=humidity,
+            temperature=temperature,
+            rain=rain
+        )
 
-    # Get recommendation
-    recommendation = get_recommendation(disease)
+        print("Gemini response received")
 
-    # Send everything back
-    return {
-        "disease": disease,
-        "confidence": prediction["confidence"],
-        "recommendation": recommendation
-    }
+        return result.model_dump()
+
+
+    except Exception as e:
+        print("\n========== BACKEND ERROR ==========")
+        traceback.print_exc()
+        print("====================================\n")
+
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "error_type": type(e).__name__}
+        )
